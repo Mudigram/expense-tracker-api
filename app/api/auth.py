@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import cast
@@ -7,7 +7,7 @@ from app.models.user import User
 from app.core.security import hash_password, verify_password, create_access_token
 from app.api.deps import get_db
 
-router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register")
@@ -35,16 +35,35 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login(data: UserLogin, db: Session = Depends(get_db)):
+async def login(request: Request, db: Session = Depends(get_db)):
+    """Accept either form data (for Swagger "Authorize" or tests) or JSON body.
+
+    JSON format: {"identifier": "<username-or-email>", "password": "..."}
+    Form format: username=<username-or-email>&password=<password> or identifier=<...>&password=<...>
+    """
+    ctype = request.headers.get("content-type", "")
+    identifier = None
+    password = None
+
+    if ctype.startswith("application/json"):
+        body = await request.json()
+        identifier = body.get("identifier")
+        password = body.get("password")
+    else:
+        form = await request.form()
+        # support both `username` (OAuth standard) and `identifier` (tests)
+        identifier = form.get("identifier") or form.get("username")
+        password = form.get("password")
+
+    if not identifier or not password:
+        raise HTTPException(status_code=400, detail="Missing credentials")
+
     user = db.query(User).filter(
-        or_(
-            User.email == data.identifier,
-            User.username == data.identifier
-        )
+        or_(User.email == identifier, User.username == identifier)
     ).first()
 
-    if not user or not verify_password(data.password, cast(str, user.hashed_password)):
+    if not user or not verify_password(cast(str, password), cast(str, user.hashed_password)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token = create_access_token({"sub": user.id})
-    return {"access_token": token}
+    return {"access_token": token, "token_type": "bearer"}

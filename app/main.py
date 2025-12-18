@@ -1,12 +1,15 @@
 from fastapi import FastAPI
-from app.api.auth import router as auth_router 
+from app.api.v1 import auth_router, expenses_router
+
 
 app = FastAPI(
     title="Expense Tracker API",
     version="1.0.0"
 )
 
-app.include_router(auth_router) 
+API_V1 = "/api/v1"
+app.include_router(auth_router, prefix=API_V1)
+app.include_router(expenses_router, prefix=API_V1)
 
 @app.get("/health")
 def health_check():

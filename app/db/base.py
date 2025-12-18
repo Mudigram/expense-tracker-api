@@ -1,4 +1,4 @@
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.schema import MetaData
 
 # Define the naming convention for indexes/constraints (optional but recommended)
