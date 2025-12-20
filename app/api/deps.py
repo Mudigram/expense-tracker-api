@@ -18,21 +18,25 @@ def get_db():
         db.close()
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        token_sub = payload.get("sub")
-        if token_sub is None:
-            raise HTTPException(status_code=401, detail="Token missing subject (sub)")
-        
-        # This will fail if sub is "testuser10" instead of "10"
-        user_id = int(token_sub) 
-        
-    except (JWTError, ValueError) as e:
-        raise HTTPException(status_code=401, detail=f"Token invalid: {str(e)}")
+
+        sub = payload.get("sub")
+        if sub is None:
+            raise HTTPException(status_code=401, detail="Token missing subject")
+
+        user_id = int(sub)
+
+    except (JWTError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid token")
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=401, detail="User in token no longer exists")
+        raise HTTPException(status_code=401, detail="User not found")
 
     return user
+

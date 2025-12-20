@@ -36,3 +36,15 @@ class ExpenseQuery(BaseModel):
     category_id: Optional[int] = None
     min_amount: Optional[float] = Field(None, ge=0)
     max_amount: Optional[float] = Field(None, ge=0)
+
+class CategorySummary(BaseModel):
+    category_id: int
+    total_amount: float
+
+class DailySummary(BaseModel):
+    date: date
+    total_amount: float
+
+class MonthlySummary(BaseModel):
+    month: str  # e.g. "2025-02"
+    total_amount: float

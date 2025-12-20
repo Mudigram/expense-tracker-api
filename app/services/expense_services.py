@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
+from sqlalchemy import select, func, extract
 from app.models.expenses import Expense
+from datetime import date
 from app.schema.expenses import ExpenseQuery
+from app.models.category import Category
 
 def get_expenses(
     db: Session,
@@ -36,3 +38,6 @@ def get_expenses(
     ).all()
 
     return items, total
+
+
+

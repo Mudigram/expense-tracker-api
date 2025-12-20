@@ -7,9 +7,17 @@ from app.models.expenses import Expense
 from app.schema.expenses import (
     ExpenseCreate,
     ExpenseResponse,
-    ExpenseUpdate,
+    ExpenseUpdate, DailySummary, CategorySummary
 )
 from app.utils.pagination import PaginatedResponse
+from app.utils.pagination import PaginatedResponse
+from app.services.expense_services import get_expenses
+from app.services.summary import (
+    get_category_summary,
+    get_daily_summary,
+    get_monthly_summary
+)
+
 
 router = APIRouter(prefix="/expenses", tags=["expenses"])
 
@@ -84,3 +92,24 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db), current_user=
         raise HTTPException(status_code=404, detail="Expense not found")
     db.delete(expense)
     db.commit()
+
+@router.get("/summary/monthly", response_model=float)
+def monthly_summary(
+    year: int,
+    month: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    return get_monthly_summary(db, current_user.id, year, month)
+
+@router.get("/summary/daily", response_model=list[DailySummary])
+def daily_summary(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    return get_daily_summary(db, current_user.id)
+
+@router.get("/summary/categories", response_model=list[CategorySummary])
+def category_summary(db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)):
+    return get_category_summary(db, current_user.id)
